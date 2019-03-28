@@ -1,6 +1,85 @@
 https://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000
 Distributed Version Control System
+Working Directory工作区
+Repository版本库
+
 git config --global user.name
 git config --global user.email
+git config --global color.ui true
+git config --global alias.<sc> <code>
+git config --global --list
+git config --local --list
+git config --list
+.git/config
+.gitconfig
+.gitignore
+gitk
 git init
 git add <file> / <dir>
+git rm <file>
+git commit -m <message>
+git add -f <file>
+git commit --amend
+git status
+git diff
+git diff --staged <file>
+git diff --cached <file>
+git diff HEAD <file>
+git log
+git log --pretty=oneline
+git log --graph --pretty=oneline --abbrev-commit
+git reflog
+git reset --hard commit id   HEAD^   HEAD^^   HEAD~100
+git checkout --<file>
+git reset HEAD <file>
+git branch
+git branch <branchname>
+git checkout <branchname>
+git checkout -b <branchname>
+git merge <branchname>
+git branch -d <branchname>
+git merge --no-ff -m 'message' <branchname>   NO Fast Forward
+git branch -D <branchname>
+git stash
+git stash list
+git stash apply
+git stash drop
+git stash pop
+git stash apply stash@{num}
+
+git remote
+git remote -v
+git remote add origin git@server-name:path/repo-name.git
+git remote rm origin
+git clone git@server-name:path/repo-name.git
+git push -u origin master
+git push -u origin master -f
+git push origin <branchname>
+git push origin local_branch:remote_branch
+git push
+git checkout -b <branchname> origin/<branchname>
+git pull
+git pull = git fetch + git merge
+git pull origin remote_branch:local_branch
+
+git branch --set-upstream-to <branchname> origin/<branchname>
+git rebase
+git tag <tagname>
+git tag <tagname> commit id
+git tag
+git tag -a <tagname> -m 'message'
+git show <tagname>
+git tag -d <tagname>
+git push origin <tagname>
+git push origin --tags
+git push origin :refs/tags/<tagname>
+git check-ignore -v <file>
+
+Git diff 常见用法
+https://www.cnblogs.com/qianqiannian/p/6010219.html
+
+git push origin与git push -u origin master的区别
+https://www.cnblogs.com/zl1991/p/7800108.html
+
+git rebase
+http://gitbook.liuhui998.com/4_2.html
