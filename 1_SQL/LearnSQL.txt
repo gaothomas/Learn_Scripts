@@ -1,0 +1,45 @@
+廖雪峰的官方网站
+https://www.liaoxuefeng.com/wiki/001508284671805d39d23243d884b8b99f440bfae87b0f4000
+关系数据库SQL 与 非关系数据库NoSQL
+
+MySQL 8.0.15安装教程(windows 64位)
+https://blog.csdn.net/qq_37350706/article/details/81707862
+
+mysql数据库在Navicat连接的时候出现1862错误
+https://blog.csdn.net/u010513756/article/details/50735010
+
+本地MySQL连不上解决方案
+https://jingyan.baidu.com/article/86112f138c781c273697874b.html
+
+MySQL-[Err] 1055 - Expression #1
+https://www.cnblogs.com/jinjiyese153/p/6814109.html
+
+SQL 教程
+http://www.w3school.com.cn/sql/index.asp
+
+优化报表取数
+http://help.finereport.com/doc-view-1003.html
+
+case when
+http://www.cnblogs.com/Richardzhu/p/3571670.html
+
+MySQL中的视图
+https://www.cnblogs.com/chenpi/p/5133648.html#_label0
+
+获取多个字段最大值最小值
+https://blog.csdn.net/yangshijin1988/article/details/51698061
+
+MySQL常用字符串函数
+https://www.jb51.net/article/87120.htm
+
+MySQL 获得当前日期时间 函数
+http://www.cnblogs.com/ggjucheng/p/3352280.html
+
+关于mysql中的count()函数
+https://blog.csdn.net/wendychiang1991/article/details/70909958
+
+left join on 和where条件的放置
+https://www.cnblogs.com/zhoug2020/p/4913302.html
+
+mysql的between的边界问题
+https://blog.csdn.net/qq_16209077/article/details/52448465
