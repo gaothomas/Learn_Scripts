@@ -46,7 +46,6 @@ git stash apply
 git stash drop
 git stash pop
 git stash apply stash@{num}
-
 git remote
 git remote -v
 git remote add origin git@server-name:path/repo-name.git
@@ -54,14 +53,14 @@ git remote rm origin
 git clone git@server-name:path/repo-name.git
 git push -u origin master
 git push -u origin master -f
+git push
 git push origin <branchname>
 git push origin local_branch:remote_branch
-git push
+git push origin :remote_branch
 git checkout -b <branchname> origin/<branchname>
 git pull
 git pull = git fetch + git merge
 git pull origin remote_branch:local_branch
-
 git branch --set-upstream-to <branchname> origin/<branchname>
 git rebase
 git tag <tagname>
