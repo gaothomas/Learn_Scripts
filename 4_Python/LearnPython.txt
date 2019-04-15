@@ -2,7 +2,10 @@
 https://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000
 Guido van Rossum
 CPython
+Python Version 3.7 does not support <>, use != instead.
+
 https://www.jianshu.com/p/eaee1fadc1e9
 https://blog.csdn.net/program_developer/article/details/79677557
 https://blog.csdn.net/u012318074/article/details/77075209/
 https://www.cnblogs.com/beiyi888/p/9662643.html
+http://www.runoob.com/python/python-func-hex.html
