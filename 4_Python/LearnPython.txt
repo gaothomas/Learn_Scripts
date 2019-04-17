@@ -9,3 +9,4 @@ https://blog.csdn.net/program_developer/article/details/79677557
 https://blog.csdn.net/u012318074/article/details/77075209/
 https://www.cnblogs.com/beiyi888/p/9662643.html
 http://www.runoob.com/python/python-func-hex.html
+http://www.runoob.com/python/att-string-strip.html

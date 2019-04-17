@@ -19,18 +19,24 @@
     # print('正常')
 # else:
     # print('过轻')
-#计算1*3*...*99
+# 计算1*3*...*99
 # multiple_stage = 1
 # for num in range(100):
     # if num % 2 == 0:
         # continue
     # multiple_stage = multiple_stage * num
 # print(multiple_stage)
+
+
 def factorial(n):
     if n == 1:
         return n
     return factorial(n-1) * n
+
+
 print(factorial(5))
+
+
 def num_contain_factornum(n, factor):
     max_iteration = 1
     while n >= factor ** max_iteration:
@@ -39,7 +45,9 @@ def num_contain_factornum(n, factor):
     for i in range(1, max_iteration+1):
         n_num = n_num + n//factor ** i
     return n_num
-print(num_contain_factornum(10000,5))
+
+
+print(num_contain_factornum(10000, 5))
 s1 = dict()
-s2 = {1,2,3}
+s2 = {1, 2, 3}
 print(type(s1), type(s2))
