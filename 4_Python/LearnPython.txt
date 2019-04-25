@@ -11,3 +11,4 @@ https://www.cnblogs.com/beiyi888/p/9662643.html
 http://www.runoob.com/python/python-func-hex.html
 http://www.runoob.com/python/att-string-strip.html
 https://www.cnblogs.com/chendai21/p/8137285.html
+https://www.cnblogs.com/apollo1616/articles/9785335.html
