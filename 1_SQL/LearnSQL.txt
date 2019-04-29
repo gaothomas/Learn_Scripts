@@ -43,3 +43,6 @@ https://www.cnblogs.com/zhoug2020/p/4913302.html
 
 mysql的between的边界问题
 https://blog.csdn.net/qq_16209077/article/details/52448465
+
+MySQL教程之concat以及group_concat的用法
+https://baijiahao.baidu.com/s?id=1595349117525189591&wfr=spider&for=pc
