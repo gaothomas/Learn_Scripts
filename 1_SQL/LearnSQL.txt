@@ -46,3 +46,12 @@ https://blog.csdn.net/qq_16209077/article/details/52448465
 
 MySQL教程之concat以及group_concat的用法
 https://baijiahao.baidu.com/s?id=1595349117525189591&wfr=spider&for=pc
+
+left join时on后面与where后面加条件的区别
+https://blog.csdn.net/huxiaoming0821/article/details/83384252
+
+妙用GROUP_CONCAT，先排序再分组
+https://blog.csdn.net/bug_yun/article/details/84913195
+
+MySQL 普通索引191原因
+https://blog.csdn.net/leyangjun/article/details/82390299
