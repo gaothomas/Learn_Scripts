@@ -65,5 +65,3 @@ class MySQLInstance:  # 创建一个实例类
         self.cursor.close()
         self.con.close()
 
-
-
