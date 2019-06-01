@@ -16,3 +16,8 @@ Python中logging模块的基本用法
 https://cuiqingcai.com/6080.html
 https://blog.csdn.net/henulwj/article/details/49174355
 https://www.cnblogs.com/deeper/p/7404190.html
+windows创建定时任务执行python脚本
+https://blog.csdn.net/shw800/article/details/78678665
+Python之pymysql的使用
+https://www.cnblogs.com/liubinsh/p/7568423.html
+https://blog.csdn.net/tcy23456/article/details/86665211

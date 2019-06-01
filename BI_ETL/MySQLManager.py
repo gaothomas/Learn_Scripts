@@ -36,6 +36,18 @@ class MySQLCursor:  # 创建一个游标类
             res = rows
         return res
 
+    def executemany(self, sql, params=None):
+        self.logger.info(sql+str(params))
+        self.cursor.executemany(sql, params)
+        self.cursor.execute('Select last_insert_id()')
+        res = self.cursor.fetchone()
+        if len(res) == 1:
+            if isinstance(res, dict):
+                return res['last_insert_id()']
+            if isinstance(res, tuple):
+                return res[0]
+        return 0
+
 
 class MySQLInstance:  # 创建一个实例类
 
@@ -61,7 +73,6 @@ class MySQLInstance:  # 创建一个实例类
         return MySQLCursor(self.cursor, self.logger)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cursor.execute('commit')
+        self.con.commit()  # self.cursor.execute('commit') 两种提交方式均可
         self.cursor.close()
         self.con.close()
-
