@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import importlib
 import sys
+import logging
 import os
+import configparser
 import pandas as pd
 from pandas import DataFrame
-from MySQLManager import MySQLInstance
-import configparser
 from datetime import datetime
-import logging
-
-importlib.reload(sys)  # python3写法, python2写法：reload(sys) sys.setdefaultencoding('utf8')
+from MySQLManager import MySQLInstance
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
@@ -74,7 +71,7 @@ WHERE tr.taskid_owner IN (%s)
 %s 
 AND tr.`status` NOT IN (%s) 
 AND tq.qindex = '0' AND ta.answer = '0' 
-GROUP BY tr.Id,tispe.product_id""" % (pg_mm_task, time_selection, status_not_in)
+GROUP BY tr.Id,tispe.product_id"""
 
 sql_get_address = """SELECT * FROM lenzbi.t_pg_report_mm_address"""
 
@@ -86,7 +83,7 @@ LEFT JOIN t_response tr ON ta.response_id = tr.Id
 WHERE tr.taskid_owner IN (%s) AND tq.type = 3 
 %s
 AND tr.`status` NOT IN (%s) 
-ORDER BY tr.Id,tq.qindex""" % (pg_mm_task, time_selection, status_not_in)
+ORDER BY tr.Id,tq.qindex"""
 
 sql_delete_report = """DELETE FROM t_pg_report_mm WHERE taskid IN (%s)""" % pg_mm_task
 
@@ -109,109 +106,103 @@ FEM_compliance,BC_compliance,SC_compliance,SHAVE_compliance,taskid) VALUES (%s,%
 %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
 
 
+def query_data_frame(db_dict, sql, result=True):
+    with MySQLInstance(**db_dict, dict_result=result) as db:
+        if db.query(sql):
+            return DataFrame(db.query(sql))
+        else:
+            logger.info('No result.')
+            sys.exit()
+
+
 def get_sku_criteria(store_type, rd, lmm, smm, hnhb):
-    if rd not in hnhb_list:
-        if store_type == 'LMM':
-            return lmm
-        else:
-            return smm
-    else:
-        if hnhb == 0:
-            if store_type == 'LMM':
-                return lmm
-            else:
-                return smm
-        else:
-            return 0
-
-
-def get_sku_exist(sku_criteria, status):
-    if sku_criteria == 1:
-        return status
+    if rd not in hnhb_list or hnhb == 0:
+        return lmm if store_type == 'LMM' else smm
     else:
         return 0
 
 
+def get_sku_exist(sku_criteria, status):
+    return status if sku_criteria == 1 else 0
+
+
 def get_image_url(taskid, rid, qid, year, image):
-    if len(image) > 0:
-        return '=HYPERLINK("http://pc.ppznet.com/task_pc/images.jsp?year='+year+'&taskid='+taskid+'&responseid='+rid\
-               + '&qid='+qid+'","图片")'
-    else:
-        return ''
+    return '' if image is None or image == '' else '=HYPERLINK("http://pc.ppznet.com/task_pc/images.jsp?year=' + year \
+                                                   + '&taskid=' + taskid + '&responseid=' + rid + '&qid=' + qid \
+                                                   + '","图片")'
 
 
 def main():
     result = DataFrame()
-    with MySQLInstance(**mysql_db_ppzck_task, dict_result=True) as db:
-        main_data = db.query(sql_get_main_data)
-    if main_data:
-        main_data_df = DataFrame(main_data)
-        with MySQLInstance(**mysql_db_ppzck_task, dict_result=True) as db:
-            pg_mm_address_df = DataFrame(db.query(sql_get_address))
-            pg_mm_sku_df = DataFrame(db.query(sql_get_sku))
-        main_data_df = pd.merge(main_data_df, pg_mm_address_df, how='left', on='SEQ')
-        main_data_df = pd.merge(main_data_df, pg_mm_sku_df, how='left', on='product_id')
-        main_data_df['ttl_sku_criteria'] = main_data_df.apply(lambda x:
-                                                              get_sku_criteria(x.Store_type,
-                                                                               x.RD, x.LMM, x.SMM, x.HNHB), axis=1)
-        main_data_df['fg_sku_criteria'] = main_data_df.apply(lambda x:
-                                                             get_sku_criteria(x.Store_type, x.RD, x.LMM_FG,
-                                                                              x.SMM_FG, x.HNHB), axis=1)
-        main_data_df['ttl_sku_exist'] = main_data_df.apply(lambda x:
-                                                           get_sku_exist(x.ttl_sku_criteria, x.status), axis=1)
-        main_data_df['fg_sku_exist'] = main_data_df.apply(lambda x:
-                                                          get_sku_exist(x.fg_sku_criteria, x.status), axis=1)
-        main_data_df.loc[main_data_df['ttl_sku_criteria'] == 0, 'status'] = ''
-        with MySQLInstance(**mysql_db_ppzck_task, dict_result=True) as db:
-            image_data_df = DataFrame(db.query(sql_get_image_url))
-        rid_series = main_data_df['rid'].drop_duplicates()
-        for rid in rid_series.values:
-            df = main_data_df[main_data_df['rid'] == rid]
-            new_df = df[['product_name', 'status']].set_index('product_name').T
-            new_df['rid'] = rid
-            new_df['TTL_SKU_Num_TTL'] = df['ttl_sku_exist'].sum()
-            new_df['TTL_SKU_Target_TTL'] = df['ttl_sku_criteria'].sum()
-            new_df['FG_SKU_Num_TTL'] = df['fg_sku_exist'].sum()
-            new_df['FG_SKU_Target_TTL'] = df['fg_sku_criteria'].sum()
-            new_df['TTL_SKU_compliance'] = round(df['ttl_sku_exist'].sum()/df['ttl_sku_criteria'].sum(), 4)
-            new_df['FG_SKU_compliance'] = round(df['fg_sku_exist'].sum()/df['fg_sku_criteria'].sum(), 4)
-            for each in category:
-                new_df['TTL_SKU_Num_' + each] = df.loc[df['Category'] == each, 'ttl_sku_exist'].sum()
-                new_df['TTL_SKU_Target_' + each] = df.loc[df['Category'] == each, 'ttl_sku_criteria'].sum()
-                new_df['FG_SKU_Num_' + each] = df.loc[df['Category'] == each, 'fg_sku_exist'].sum()
-                new_df['FG_SKU_Target_' + each] = df.loc[df['Category'] == each, 'fg_sku_criteria'].sum()
-                new_df[each + '_compliance'] = round(new_df['TTL_SKU_Num_' +
-                                                            each]/new_df['TTL_SKU_Target_' + each], 4)
-            new_df = pd.merge(new_df, df.drop_duplicates('rid'), how='left', on='rid')
-            new_df['图像识别'] = '=HYPERLINK("http://pc.ppznet.com/task_pc//shenhe/aicorrect/' \
-                             'images.jsp?responseid=' + rid + '&addressidnum=' + \
-                             new_df['SEQ'].values[0] + '&iffenqu=1","图像识别")'
-            new_df['Month'] = new_df['FW_date'].dt.strftime('%Y/%m')
-            year = str(new_df['FW_date'].dt.year.values[0])
-            image_df = image_data_df[image_data_df['rid'] == rid]
-            image_df = image_df.copy()
-            image_df['image_url'] = image_df.apply(lambda x:
-                                                   get_image_url(x.taskid, x.rid, x.qid, year, x.image), axis=1)
-            image_new_df = image_df[['qindex', 'image_url']].set_index('qindex').T
-            image_new_df.rename(columns=pic, index={'image_url': 0}, inplace=True)
-            new_df = new_df.join(image_new_df)
-            result = result.append(new_df)
-        result['FW_date'] = result['FW_date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        # with MySQLInstance(**mysql_db_bi_task, dict_result=True) as bi_db:
-        #     bi_db.execute(sql_delete_report)
-        #     bi_db.execute(sql_delete_sku)
-        #     bi_db.executemany(sql_insert_sku, [tuple(x) for x in main_data_df[['rid', 'product_id',
-        #                                                                        'product_name',
-        #                                                                        'status', 'taskid']].values])
-        #     bi_db.executemany(sql_insert_basic_info, [tuple(x)
-        #                                               for x in result[insert_table_basic_info_list].values])
-        result.sort_values(by='FW_date')
-        result_rd = result.reindex(columns=result_rd_order)
-        result = result.reindex(columns=result_order)
-        result_rd.to_excel(excel_rd_file, sheet_name="pg_mini_rd_report", index=False)
-        result.to_excel(excel_file, sheet_name="pg_mini_report", index=False)
-    else:
-        logger.info('No result.')
+    main_data_df = query_data_frame(mysql_db_ppzck_task,
+                                    sql_get_main_data % (pg_mm_task, time_selection, status_not_in))
+    pg_mm_address_df = query_data_frame(mysql_db_ppzck_task, sql_get_address)
+    pg_mm_sku_df = query_data_frame(mysql_db_ppzck_task, sql_get_sku)
+
+    main_data_df = pd.merge(main_data_df, pg_mm_address_df, how='left', on='SEQ')
+    main_data_df = pd.merge(main_data_df, pg_mm_sku_df, how='left', on='product_id')
+    main_data_df = main_data_df[pd.notna(main_data_df.product_name)]
+    main_data_df['ttl_sku_criteria'] = main_data_df.apply(lambda x:
+                                                          get_sku_criteria(x.Store_type,
+                                                                           x.RD, x.LMM, x.SMM, x.HNHB), axis=1)
+    main_data_df['fg_sku_criteria'] = main_data_df.apply(lambda x:
+                                                         get_sku_criteria(x.Store_type, x.RD, x.LMM_FG,
+                                                                          x.SMM_FG, x.HNHB), axis=1)
+    main_data_df['ttl_sku_exist'] = main_data_df.apply(lambda x:
+                                                       get_sku_exist(x.ttl_sku_criteria, x.status), axis=1)
+    main_data_df['fg_sku_exist'] = main_data_df.apply(lambda x:
+                                                      get_sku_exist(x.fg_sku_criteria, x.status), axis=1)
+    main_data_df.loc[main_data_df['ttl_sku_criteria'] == 0, 'status'] = ''
+
+    image_data_df = query_data_frame(mysql_db_ppzck_task,
+                                     sql_get_image_url % (pg_mm_task, time_selection, status_not_in))
+
+    rid_series = main_data_df['rid'].drop_duplicates()
+
+    for rid in rid_series.values:
+        df = main_data_df[main_data_df['rid'] == rid]
+        new_df = df[['product_name', 'status']].set_index('product_name').T
+        new_df['rid'] = rid
+        new_df['TTL_SKU_Num_TTL'] = df['ttl_sku_exist'].sum()
+        new_df['TTL_SKU_Target_TTL'] = df['ttl_sku_criteria'].sum()
+        new_df['FG_SKU_Num_TTL'] = df['fg_sku_exist'].sum()
+        new_df['FG_SKU_Target_TTL'] = df['fg_sku_criteria'].sum()
+        new_df['TTL_SKU_compliance'] = round(df['ttl_sku_exist'].sum()/df['ttl_sku_criteria'].sum(), 4)
+        new_df['FG_SKU_compliance'] = round(df['fg_sku_exist'].sum()/df['fg_sku_criteria'].sum(), 4)
+        for each in category:
+            new_df['TTL_SKU_Num_' + each] = df.loc[df['Category'] == each, 'ttl_sku_exist'].sum()
+            new_df['TTL_SKU_Target_' + each] = df.loc[df['Category'] == each, 'ttl_sku_criteria'].sum()
+            new_df['FG_SKU_Num_' + each] = df.loc[df['Category'] == each, 'fg_sku_exist'].sum()
+            new_df['FG_SKU_Target_' + each] = df.loc[df['Category'] == each, 'fg_sku_criteria'].sum()
+            new_df[each + '_compliance'] = round(new_df['TTL_SKU_Num_' +
+                                                        each]/new_df['TTL_SKU_Target_' + each], 4)
+        new_df = pd.merge(new_df, df.drop_duplicates('rid'), how='left', on='rid')
+        new_df['图像识别'] = '=HYPERLINK("http://pc.ppznet.com/task_pc//shenhe/aicorrect/' \
+                         'images.jsp?responseid=' + rid + '&addressidnum=' + \
+                         new_df['SEQ'].values[0] + '&iffenqu=1","图像识别")'
+        new_df['Month'] = new_df['FW_date'].dt.strftime('%Y/%m')
+        year = str(new_df['FW_date'].dt.year.values[0])
+        image_df = image_data_df[image_data_df['rid'] == rid].copy()
+        image_df['image_url'] = image_df.apply(lambda x:
+                                               get_image_url(x.taskid, x.rid, x.qid, year, x.image), axis=1)
+        image_new_df = image_df[['qindex', 'image_url']].set_index('qindex').T
+        image_new_df.rename(columns=pic, index={'image_url': 0}, inplace=True)
+        new_df = new_df.join(image_new_df)
+        result = result.append(new_df, sort=False)
+    result['FW_date'] = result['FW_date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+    # with MySQLInstance(**mysql_db_bi_task, dict_result=True) as bi_db:
+    #     bi_db.execute(sql_delete_report)
+    #     bi_db.execute(sql_delete_sku)
+    #     bi_db.executemany(sql_insert_sku, [tuple(x) for x in main_data_df[['rid', 'product_id',
+    #                                                                        'product_name',
+    #                                                                        'status', 'taskid']].values])
+    #     bi_db.executemany(sql_insert_basic_info, [tuple(x)
+    #                                               for x in result[insert_table_basic_info_list].values])
+    result.sort_values(by='FW_date')
+    result_rd = result.reindex(columns=result_rd_order)
+    result = result.reindex(columns=result_order)
+    result_rd.to_excel(excel_rd_file, sheet_name="pg_mini_rd_report", index=False)
+    result.to_excel(excel_file, sheet_name="pg_mini_report", index=False)
 
 
 if __name__ == '__main__':

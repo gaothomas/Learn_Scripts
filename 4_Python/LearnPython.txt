@@ -24,3 +24,13 @@ https://blog.csdn.net/tcy23456/article/details/86665211
 利用Python进行数据分析
 https://www.jianshu.com/p/04d180d90a3f
 https://blog.csdn.net/qq_28869927/article/details/83316023
+切片
+list 切片只有一种，按下标切片，左闭右开区间，深拷贝。
+ndarray 切片只有一种，按下标切片，左闭右开区间，浅拷贝，应用copy方法生成深拷贝。
+dataframe 切片两种，按下标切片，左闭右开区间，按索引切片，闭区间，浅拷贝，应用copy方法生成深拷贝。
+布尔索引/花式索引
+ndarray 赋值给变量（无论是否应用copy方法），深拷贝；不赋值给变量，浅拷贝。
+dataframe 赋值给变量（无论是否应用copy方法），深拷贝；不赋值给变量，浅拷贝。
+SettingWithCopyWarning 该用copy时，一定要用copy。
+https://www.jianshu.com/p/72274ccb647a
+https://blog.csdn.net/weixin_41116447/article/details/81081540

@@ -2,10 +2,7 @@
 # -- coding utf-8 --
 
 import pymysql
-import importlib
-import sys
 import logging
-importlib.reload(sys)  # python3写法, python2写法：reload(sys) sys.setdefaultencoding('utf8')
 
 
 class MySQLCursor:  # 创建一个游标类
