@@ -1285,21 +1285,6 @@ def to_report(category_index):
                                             category_index)
     old_df, check_number_old_df = to_result(task_old[category_index], time_selection_old, status_not_in_old,
                                             category_index)
-    store_new_df = query_data_frame(mysql_db_ppzck_task, sql_get_store_info)
-    store_old_df = store_new_df.copy()
-    for survey_index in range(8):
-        store_new_df = pd.merge(store_new_df, query_data_frame(
-            mysql_db_ppzck_task, sql_get_store_list % (task_new[survey_index], time_selection_new,
-                                                       status_not_in_new)), how='left', on='addressIDnum')
-        store_old_df = pd.merge(store_old_df, query_data_frame(
-            mysql_db_ppzck_task, sql_get_store_list % (task_old[survey_index], time_selection_old,
-                                                       status_not_in_old)), how='left', on='addressIDnum')
-    store_new_df.iloc[:, 15:] = store_new_df.iloc[:, 15:].apply(pd.notna)
-    store_new_df['category_num'] = store_new_df.iloc[:, 15:].apply(np.sum, axis=1)
-    store_new_df.drop(columns=store_new_df.columns[15:23], inplace=True)
-    store_old_df.iloc[:, 15:] = store_old_df.iloc[:, 15:].apply(pd.notna)
-    store_old_df['category_num'] = store_old_df.iloc[:, 15:].apply(np.sum, axis=1)
-    store_old_df.drop(columns=store_old_df.columns[15:23], inplace=True)
 
     new_df = pd.merge(new_df, store_new_df, how='left', on='addressIDnum')
     old_df = pd.merge(old_df, store_old_df, how='left', on='addressIDnum')
@@ -1353,6 +1338,22 @@ def to_report(category_index):
                               [tuple(x) for x in old_df.reindex(columns=insert_table_order_old).values])
 
 
+store_new_df = query_data_frame(mysql_db_ppzck_task, sql_get_store_info)
+store_old_df = store_new_df.copy()
+for survey_index in range(8):
+    store_new_df = pd.merge(store_new_df, query_data_frame(
+        mysql_db_ppzck_task, sql_get_store_list % (task_new[survey_index], time_selection_new,
+                                                   status_not_in_new)), how='left', on='addressIDnum')
+    store_old_df = pd.merge(store_old_df, query_data_frame(
+        mysql_db_ppzck_task, sql_get_store_list % (task_old[survey_index], time_selection_old,
+                                                   status_not_in_old)), how='left', on='addressIDnum')
+store_new_df.iloc[:, 15:] = store_new_df.iloc[:, 15:].apply(pd.notna)
+store_new_df['category_num'] = store_new_df.iloc[:, 15:].apply(np.sum, axis=1)
+store_new_df.drop(columns=store_new_df.columns[15:23], inplace=True)
+store_old_df.iloc[:, 15:] = store_old_df.iloc[:, 15:].apply(pd.notna)
+store_old_df['category_num'] = store_old_df.iloc[:, 15:].apply(np.sum, axis=1)
+store_old_df.drop(columns=store_old_df.columns[15:23], inplace=True)
+
 if __name__ == '__main__':
     start_time = datetime.now()
     # 删除旧数据
@@ -1363,7 +1364,7 @@ if __name__ == '__main__':
             delete_db.execute(sql_delete_report % task_old[task_index])
             delete_db.execute(sql_delete_sku % task_old[task_index])
     logger.info('Parent process %s.' % os.getpid())
-    # 开启进程池，一般CPU核数一半
+    # 开启进程池，一般CPU核数一半，子进程无法引用主进程中的结果
     p = Pool(2)
     for index in range(8):
         p.apply_async(to_report, args=(index,))
