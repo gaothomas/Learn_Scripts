@@ -728,33 +728,33 @@ def to_result(task, time, status_not, category_index):
         elif category_index == 2:
             # 主货架品牌分销
             rid_answer_number_transpose_df[
-                rid_answer_number_transpose_df.iloc[:, 51].name.replace('_rack', '') + '_distribution'] = \
+                rid_answer_number_transpose_df.iloc[:, 51].name.replace('_rack', '') + '_shelf_distribution'] = \
                 1 if (rid_answer_number_transpose_df.iat[0, 1] + rid_answer_number_transpose_df.iat[0, 8] +
                       rid_answer_number_transpose_df.iat[0, 17]) > 0 else 0
             rid_answer_number_transpose_df[
-                rid_answer_number_transpose_df.iloc[:, 52].name.replace('_rack', '') + '_distribution'] = \
+                rid_answer_number_transpose_df.iloc[:, 52].name.replace('_rack', '') + '_shelf_distribution'] = \
                 1 if (rid_answer_number_transpose_df.iat[0, 10] + rid_answer_number_transpose_df.iat[0, 9] +
                       rid_answer_number_transpose_df.iat[0, 18]) > 0 else 0
             rid_answer_number_transpose_df[
-                rid_answer_number_transpose_df.iloc[:, 53].name.replace('_rack', '') + '_distribution'] = \
+                rid_answer_number_transpose_df.iloc[:, 53].name.replace('_rack', '') + '_shelf_distribution'] = \
                 1 if rid_answer_number_transpose_df.iat[0, 10] > 0 else 0
             rid_answer_number_transpose_df[
-                rid_answer_number_transpose_df.iloc[:, 54].name.replace('_rack', '') + '_distribution'] = \
+                rid_answer_number_transpose_df.iloc[:, 54].name.replace('_rack', '') + '_shelf_distribution'] = \
                 1 if rid_answer_number_transpose_df.iat[0, 11] > 0 else 0
             rid_answer_number_transpose_df[
-                rid_answer_number_transpose_df.iloc[:, 55].name.replace('_rack', '') + '_distribution'] = \
+                rid_answer_number_transpose_df.iloc[:, 55].name.replace('_rack', '') + '_shelf_distribution'] = \
                 1 if (rid_answer_number_transpose_df.iat[0, 3] + rid_answer_number_transpose_df.iat[0, 12] +
                       rid_answer_number_transpose_df.iat[0, 19]) > 0 else 0
             rid_answer_number_transpose_df[
-                rid_answer_number_transpose_df.iloc[:, 56].name.replace('_rack', '') + '_distribution'] = \
+                rid_answer_number_transpose_df.iloc[:, 56].name.replace('_rack', '') + '_shelf_distribution'] = \
                 1 if (rid_answer_number_transpose_df.iat[0, 4] + rid_answer_number_transpose_df.iat[0, 13] +
                       rid_answer_number_transpose_df.iat[0, 20]) > 0 else 0
             rid_answer_number_transpose_df[
-                rid_answer_number_transpose_df.iloc[:, 57].name.replace('_rack', '') + '_distribution'] = \
+                rid_answer_number_transpose_df.iloc[:, 57].name.replace('_rack', '') + '_shelf_distribution'] = \
                 1 if (rid_answer_number_transpose_df.iat[0, 5] + rid_answer_number_transpose_df.iat[0, 14] +
                       rid_answer_number_transpose_df.iat[0, 21]) > 0 else 0
             rid_answer_number_transpose_df[
-                rid_answer_number_transpose_df.iloc[:, 58].name.replace('_rack', '') + '_distribution'] = \
+                rid_answer_number_transpose_df.iloc[:, 58].name.replace('_rack', '') + '_shelf_distribution'] = \
                 1 if (rid_answer_number_transpose_df.iat[0, 6] + rid_answer_number_transpose_df.iat[0, 15] +
                       rid_answer_number_transpose_df.iat[0, 22]) > 0 else 0
 
