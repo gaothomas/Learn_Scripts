@@ -17,7 +17,7 @@ from EmailSender import EmailSender
 # 生成日志文件
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
-log_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log_pg_hsm.log')
+log_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log_pg_hsm_1906.log')
 f_handler = logging.FileHandler(log_file)
 f_handler.setLevel(logging.INFO)
 formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
@@ -29,7 +29,7 @@ logger.addHandler(s_handler)
 
 # 读取配置文件
 conf = configparser.ConfigParser()
-conf_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config_pg_hsm.ini')
+conf_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config_pg_hsm_1906.ini')
 conf.read(conf_file, encoding='utf-8')
 
 mysql_db_ppzck_task = {
@@ -1290,6 +1290,7 @@ def to_report(category_index):
     old_df = pd.merge(old_df, store_old_df, how='left', on='addressIDnum')
 
     new_df = pd.merge(new_df, old_df, how='left', on='addressIDnum', suffixes=('', '_old'))
+    new_df.drop_duplicates(subset='rid', inplace=True)
     # 检验两期数据
     new_df['check_total_shelf'] = new_df.apply(
         lambda x: check_vs_pp_total_shelf(x.total_shelf, x.total_shelf_old), axis=1)

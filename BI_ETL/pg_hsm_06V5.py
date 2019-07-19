@@ -18,7 +18,7 @@ start_time = datetime.now()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
-log_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log_pg_hsm.log')
+log_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log_pg_hsm_1906.log')
 f_handler = logging.FileHandler(log_file)
 f_handler.setLevel(logging.INFO)
 formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
@@ -29,7 +29,7 @@ s_handler.setLevel(logging.DEBUG)
 logger.addHandler(s_handler)
 
 conf = configparser.ConfigParser()
-conf_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config_pg_hsm.ini')
+conf_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config_pg_hsm_1906.ini')
 conf.read(conf_file, encoding='utf-8')
 
 mysql_db_ppzck_task = {
@@ -76,6 +76,7 @@ new_file = []
 old_file = []
 checkpoint_file = []
 
+
 for each_category in category:
     task_new.append(conf.get('pg_hsm_' + each_category, 'task_new'))
     task_old.append(conf.get('pg_hsm_' + each_category, 'task_old'))
@@ -93,6 +94,19 @@ for each_category in category:
                                         ('pg_hsm_report_checkpoint_' + each_category +
                                          datetime.now().strftime('%Y-%m-%d') + '.xlsx')))
 
+sql_delete_report = """DELETE FROM t_pg_report_hsm WHERE taskid IN (%s)"""
+sql_delete_sku = """DELETE FROM t_pg_report_hsm_sku_details WHERE taskid IN (%s)"""
+
+# with MySQLInstance(**mysql_db_bi_task, dict_result=True) as delete_db:
+#     for index1 in range(8):
+#         if index1 == 5 or index1 == 7:
+#             continue
+#         else:
+#             delete_db.execute(sql_delete_report % task_new[index1])
+#             delete_db.execute(sql_delete_sku % task_new[index1])
+#             delete_db.execute(sql_delete_report % task_old[index1])
+#             delete_db.execute(sql_delete_sku % task_old[index1])
+
 
 def query_data_frame(db_dict, sql, result=True):
     with MySQLInstance(**db_dict, dict_result=result) as db:
@@ -103,53 +117,71 @@ def query_data_frame(db_dict, sql, result=True):
             sys.exit()
 
 
-sql_delete_report = """DELETE FROM t_pg_report_hsm WHERE taskid IN (%s)"""
-sql_delete_sku = """DELETE FROM t_pg_report_hsm_sku_details WHERE taskid IN (%s)"""
-
-with MySQLInstance(**mysql_db_bi_task, dict_result=True) as delete_db:
-    for task_index in range(8):
-        delete_db.execute(sql_delete_report % task_new[task_index])
-        delete_db.execute(sql_delete_sku % task_new[task_index])
-        delete_db.execute(sql_delete_report % task_old[task_index])
-        delete_db.execute(sql_delete_sku % task_old[task_index])
-
 sql_get_store_info = """SELECT * FROM lenzbi.t_pg_report_hsm_address"""
-sql_get_store_list = """SELECT tt.addressIDnum, tr.id rid 
+sql_get_sku_info = """SELECT * FROM lenzbi.t_pg_report_hsm_sku"""
+sql_get_qnair_info = """SELECT * FROM lenzbi.t_pg_report_hsm_qnair"""
+sql_get_rid = """SELECT tr.id rid ,tr.taskid_owner taskid, tt.addressIDnum
 FROM t_response tr LEFT JOIN t_tasklaunch tt ON tr.taskid = tt.taskid 
 WHERE tr.taskid_owner IN (%s) 
 %s 
-AND tr.`status` NOT IN (%s) GROUP BY tt.addressIDnum"""
+AND tr.`status` NOT IN (%s)"""
+sql_get_sku = """SELECT tr.Id rid, tispe.product_id, tispe.`status` 
+FROM t_image_store_product_exist tispe LEFT JOIN t_response tr ON tispe.response_id = tr.id
+WHERE tr.taskid_owner IN (%s) 
+%s 
+AND tr.`status` NOT IN (%s)"""
+sql_get_answer = """SELECT tr.id rid, ta.qid, ta.answer, ta.image 
+FROM t_answer ta LEFT JOIN t_response tr ON ta.response_id = tr.id
+WHERE tr.taskid_owner IN (%s) 
+%s 
+AND tr.`status` NOT IN (%s)"""
+sql_get_sku_verification = """SELECT tr.id rid, tre.username 
+FROM t_response_examine tre LEFT JOIN t_response tr ON tr.Id = tre.id 
+WHERE tr.taskid_owner IN (%s) 
+%s 
+AND tr.`status` NOT IN (%s) """
+sql_get_multi_option = """SELECT tq.id qid, CONCAT('%s',tqo.option_value) option_name, tqo.option_index 
+FROM t_question_option tqo LEFT JOIN t_question tq ON tqo.question_id = tq.Id
+WHERE tq.taskid IN (%s)"""
 
-store_df = query_data_frame(mysql_db_ppzck_task, sql_get_store_info)
-store_new_df = store_df.copy()
-store_old_df = store_df.copy()
-# store_df['mark'] = store_df.apply(lambda x: x.addressIDnum[0], axis=1)
-# store_df['mark'] = [x[0] for x in store_df['addressIDnum'].values]
-for survey_index in range(8):
-    store_new_df = pd.merge(store_new_df, query_data_frame(
-        mysql_db_ppzck_task, sql_get_store_list % (task_new[survey_index], time_selection_new, status_not_in_new)),
+rid_df_list_new = []
+rid_df_list_old = []
+
+store_info_df = query_data_frame(mysql_db_ppzck_task, sql_get_store_info)
+store_new_df = store_info_df.copy()
+store_old_df = store_info_df.copy()
+store_info_df['mark'] = store_info_df.apply(lambda x: x.addressIDnum[0], axis=1)
+# store_info_df['mark'] = [x[0] for x in store_info_df['addressIDnum'].values]
+sku_info_df = query_data_frame(mysql_db_ppzck_task, sql_get_sku_info)
+qnair_info_df = query_data_frame(mysql_db_ppzck_task, sql_get_qnair_info)
+
+for index2 in range(8):
+    if index2 == 5 or index2 == 7:
+        continue
+    else:
+        rid_df_list_new.append(query_data_frame(mysql_db_ppzck_task, sql_get_rid % (
+            task_new[index2], time_selection_new, status_not_in_new)))
+        rid_df_list_old.append(query_data_frame(mysql_db_ppzck_task, sql_get_rid % (
+            task_old[index2], time_selection_old, status_not_in_old)))
+        if index2 == 4 or index2 == 6:
+            rid_df_list_new.append(rid_df_list_new[index2])
+            rid_df_list_old.append(rid_df_list_old[index2])
+
+for index3 in range(8):
+    rid_df_list_new[index3].drop_duplicates(subset='rid', inplace=True)
+    rid_df_list_old[index3].drop_duplicates(subset='rid', inplace=True)
+    store_new_df = pd.merge(store_new_df, rid_df_list_new[index3].reindex(columns=['addressIDnum', 'rid']),
                             how='left', on='addressIDnum', sort=False, copy=False)
-    store_old_df = pd.merge(store_old_df, query_data_frame(
-        mysql_db_ppzck_task, sql_get_store_list % (task_old[survey_index], time_selection_old, status_not_in_old)),
+    store_old_df = pd.merge(store_old_df, rid_df_list_old[index3].reindex(columns=['addressIDnum', 'rid']),
                             how='left', on='addressIDnum', sort=False, copy=False)
+store_new_df.drop_duplicates(subset='addressIDnum', inplace=True)
 store_new_df.iloc[:, 15:] = store_new_df.iloc[:, 15:].apply(pd.notna)
 store_new_df['category_num'] = store_new_df.iloc[:, 15:].apply(np.sum, axis=1)
 store_new_df.drop(columns=store_new_df.columns[15:23], inplace=True)
+store_old_df.drop_duplicates(subset='addressIDnum', inplace=True)
 store_old_df.iloc[:, 15:] = store_old_df.iloc[:, 15:].apply(pd.notna)
 store_old_df['category_num'] = store_old_df.iloc[:, 15:].apply(np.sum, axis=1)
 store_old_df.drop(columns=store_old_df.columns[15:23], inplace=True)
-
-sql_get_number_answer = """SELECT tr.id rid, ta.answer, tprhq.`month`, tprhq.category, tprhq.taskid, tprhq.qid, 
-tprhq.qindex, tprhq.title, tprhq.sub_title, tprhq.criteria, tt.addressIDnum FROM t_response tr 
-LEFT JOIN lenzbi.t_pg_report_hsm_qnair tprhq ON tr.taskid_owner = tprhq.taskid 
-LEFT JOIN t_answer ta ON tr.id = ta.response_id AND tprhq.qid = ta.qid 
-LEFT JOIN t_tasklaunch tt ON tr.taskid = tt.taskid 
-WHERE tr.taskid_owner IN (%s) 
-%s 
-AND tr.`status` NOT IN (%s) 
-AND tprhq.criteria NOT IN ('pic','multi_option','single_option','verification') 
-AND tprhq.category = '%s'
-GROUP BY tr.id,tprhq.qindex"""
 
 
 def is_non_negative_number(num):
@@ -202,10 +234,16 @@ def number_normalization_answer_status(criteria, answer):
             return 0
 
 
-def generate_number_df(task, time, status_not, i):
-    df = query_data_frame(mysql_db_ppzck_task, sql_get_number_answer % (task, time, status_not, category[i]))
+def generate_number_df(df1, df2, i):
+    df = pd.merge(df1, qnair_info_df[(qnair_info_df['criteria'] != 'pic') & (
+            qnair_info_df['criteria'] != 'multi_option') & (qnair_info_df['criteria'] != 'single_option') & (
+            qnair_info_df['criteria'] != 'verification') & (qnair_info_df['category'] == category[i])],
+                  how='left', on='taskid', sort=False, copy=False)
+    df = pd.merge(df, df2, how='left', on=['rid', 'qid'], sort=False, copy=False)
     df['answer_status'] = df.apply(lambda x: number_normalization_answer_status(x.criteria, x.answer), axis=1)
     df['answer_new'] = df.apply(lambda x: number_normalization_answer_new(x.criteria, x.answer), axis=1)
+    check_number_df = df.reindex(columns=['addressIDnum', 'rid', 'taskid', 'qid', 'title', 'answer', 'answer_status'])
+    check_number_df = check_number_df[check_number_df['answer_status'] == 0]
     number_df = df.reindex(columns=['rid', 'category', 'month', 'addressIDnum', 'taskid', 'title', 'answer_new'])
     number_df = number_df.set_index(['rid', 'category', 'month', 'addressIDnum', 'taskid', 'title']).unstack()
     number_df.columns = number_df.columns.droplevel(0)
@@ -346,18 +384,7 @@ def generate_number_df(task, time, status_not, i):
                  agg_df['check_total_sum_packing_column'] + agg_df['check_total_sum_basket'] +
                  agg_df['check_total_sum_scenario_heap']) == 9)
     number_df = number_df.join(agg_df)
-    return number_df, df[df['answer_status'] == 0]
-
-
-sql_get_image_answer = """SELECT tr.id rid, ta.image, tprhq.qid, tprhq.title, tprhq.taskid FROM t_response tr 
-LEFT JOIN lenzbi.t_pg_report_hsm_qnair tprhq ON tr.taskid_owner = tprhq.taskid 
-LEFT JOIN t_answer ta ON tr.id = ta.response_id AND tprhq.qid = ta.qid 
-WHERE tr.taskid_owner IN (%s) 
-%s 
-AND tr.`status` NOT IN (%s) 
-AND tprhq.criteria IN ('pic') 
-AND tprhq.category = '%s'
-GROUP BY tr.id,tprhq.qindex"""
+    return number_df, check_number_df
 
 
 def get_image_url(taskid, rid, qid, year, image):
@@ -366,27 +393,16 @@ def get_image_url(taskid, rid, qid, year, image):
                                                    + '","图片")'
 
 
-def generate_image_df(task, time, status_not, year, i):
-    df = query_data_frame(mysql_db_ppzck_task, sql_get_image_answer % (task, time, status_not, category[i]))
+def generate_image_df(df1, df2, year, i):
+    df = pd.merge(df1, qnair_info_df[(qnair_info_df['criteria'] == 'pic') & (qnair_info_df['category'] == category[i])],
+                  how='left', on='taskid', sort=False, copy=False)
+    df = pd.merge(df, df2, how='left', on=['rid', 'qid'], sort=False, copy=False)
     df['image_url'] = df.apply(lambda x: get_image_url(x.taskid, x.rid, x.qid, year, x.image), axis=1)
     image_df = df.reindex(columns=['rid', 'title', 'image_url'])
     image_df = image_df.set_index(['rid', 'title']).unstack()
     image_df.columns = image_df.columns.droplevel(0)
     return image_df
 
-
-sql_get_sku_answer = """SELECT tr.id rid, tr.taskid_owner taskid, tprhs.product_id, tprhs.product_name, tprha.RD, 
-tispe.`status`, tprhs.fast_growing, tprhs.hnhb, tprhs.target_sku, tprhs.mark, 
-tprhs.denominator_option1, tprhs.numerator_option1, tprhs.denominator_option2, tprhs.numerator_option2 
-FROM t_response tr LEFT JOIN t_tasklaunch tt ON tr.taskid = tt.taskid
-LEFT JOIN lenzbi.t_pg_report_hsm_sku tprhs ON LEFT(tt.addressIDnum, 1) = tprhs.mark 
-LEFT JOIN lenzbi.t_pg_report_hsm_address tprha ON tt.addressIDnum = tprha.addressIDnum
-LEFT JOIN t_image_store_product_exist tispe ON tr.Id = tispe.response_id AND tprhs.product_id = tispe.product_id
-WHERE tr.taskid_owner IN (%s)
-%s
-AND tr.`status` NOT IN (%s) 
-AND tprhs.category = '%s'
-GROUP BY tr.id,tprhs.product_id"""
 
 sql_insert_sku = """INSERT INTO t_pg_report_hsm_sku_details (rid,product_id,product_name,is_exist,taskid) 
 VALUES (%s,%s,%s,%s,%s)"""
@@ -407,10 +423,29 @@ def baby_p_target_sku(mark, a1, a2, ts):
     return ts-3 if mark == 'P' and (a1/ts < a2/(ts-3)) else ts
 
 
-def generate_sku_df(task, time, status_not, i):
-    df = query_data_frame(mysql_db_ppzck_task, sql_get_sku_answer % (task, time, status_not, category[i]))
+def fem_hnhb_target_sku(rd, mark, target_sku):
+    if rd in hnhb_list:
+        if mark == 'L':
+            return 18
+        elif mark == 'S':
+            return 15
+        elif mark == 'H':
+            return 28
+        else:
+            return 22
+    else:
+        return target_sku
+
+
+def generate_sku_df(df1, df2, i):
+    df = pd.merge(df1, store_info_df, how='left', on='addressIDnum', sort=False, copy=False)
+    df = pd.merge(df, sku_info_df[sku_info_df['category'] == category[i]],
+                  how='left', on='mark', sort=False, copy=False)
+    df = pd.merge(df, df2, how='left', on=['rid', 'product_id'], sort=False, copy=False)
     df['answer_new'] = df.apply(lambda x: sku_normalization_answer(x.RD, x.status, x.hnhb), axis=1)
     df = df[df['answer_new'] != -1]
+    if i == 4:
+        df['target_sku'] = df.apply(lambda x: fem_hnhb_target_sku(x.RD, x.mark, x.target_sku), axis=1)
     df['fast_growing_sku_exist'] = df.apply(lambda x: fast_growing_sku_answer(x.answer_new, x.fast_growing), axis=1)
     sku_df = df.reindex(columns=['rid', 'mark', 'target_sku', 'product_name', 'answer_new'])
     sku_df = sku_df.set_index(['rid', 'mark', 'target_sku', 'product_name']).unstack()
@@ -443,29 +478,10 @@ def generate_sku_df(task, time, status_not, i):
     sku_df['fast_growing_sku_compliance'] = np.where(
         sku_df['actual_sku'] == 0, 0, round(sku_df['actual_fast_growing_sku'] / sku_df['actual_sku'], 4))
     del sku_df['mark']
-    with MySQLInstance(**mysql_db_bi_task, dict_result=True) as db:
-        db.executemany(sql_insert_sku, [tuple(x) for x in df[['rid', 'product_id', 'product_name',
-                                                              'answer_new', 'taskid']].values])
+    # with MySQLInstance(**mysql_db_bi_task, dict_result=True) as db:
+    #     db.executemany(sql_insert_sku, [tuple(x) for x in df[['rid', 'product_id', 'product_name',
+    #                                                           'answer_new', 'taskid']].values])
     return sku_df
-
-
-sql_get_verification_answer = """SELECT tr.id rid, ta.answer,
-tprhq.title FROM t_response tr
-LEFT JOIN lenzbi.t_pg_report_hsm_qnair tprhq ON tr.taskid_owner = tprhq.taskid 
-LEFT JOIN t_answer ta ON tr.id = ta.response_id AND tprhq.qid = ta.qid 
-WHERE tr.taskid_owner IN (%s) 
-%s 
-AND tr.`status` NOT IN (%s) 
-AND tprhq.criteria IN ('verification') 
-AND tprhq.category = '%s'
-GROUP BY tr.id,tprhq.qindex"""
-
-sql_get_sku_verification_answer = """SELECT tr.id rid, tre.username, tre.context, tre.examine_time 
-FROM t_response tr LEFT JOIN t_response_examine tre ON tr.Id = tre.id 
-WHERE tr.taskid_owner IN (%s) 
-%s 
-AND tr.`status` NOT IN (%s) 
-ORDER BY tr.id, tre.examine_time"""
 
 
 def sku_verification_normalization_answer(username, i):
@@ -483,33 +499,22 @@ def sku_verification_normalization_answer(username, i):
         return 1
 
 
-def generate_verification_df(task, time, status_not, i):
-    df1 = query_data_frame(mysql_db_ppzck_task, sql_get_verification_answer % (task, time, status_not, category[i]))
-    df2 = query_data_frame(mysql_db_ppzck_task, sql_get_sku_verification_answer % (task, time, status_not))
-    df1 = df1.set_index(['rid', 'title']).unstack()
-    df1.columns = df1.columns.droplevel(0)
-    df1['shelf_display_verification_1'] = 1 - pd.isna(df1.person_verification_2) - (df1.person_verification_2 == '')
-    # df1['shelf_display_verification_1'] = df1.apply(
+def generate_verification_df(df1, df2, df3, i):
+    df = pd.merge(df1, qnair_info_df[(qnair_info_df['criteria'] == 'verification') & (
+            qnair_info_df['category'] == category[i])], how='left', on='taskid', sort=False, copy=False)
+    df = pd.merge(df, df2, how='left', on=['rid', 'qid'], sort=False, copy=False)
+    df = df.reindex(columns=['rid', 'title', 'answer'])
+    df = df.set_index(['rid', 'title']).unstack()
+    df.columns = df.columns.droplevel(0)
+    df['shelf_display_verification_1'] = 1 - pd.isna(df.person_verification_2) - (df.person_verification_2 == '')
+    # df['shelf_display_verification_1'] = df.apply(
     #     lambda x: 1 - pd.isna(x.person_verification_2) - (x.person_verification_2 == ''), axis=1)
-    df1['shelf_display_verification_2'] = 1 - pd.isna(df1.person_verification_3) - (df1.person_verification_3 == '')
-    df2['sku_verification_count'] = df2.apply(lambda x: sku_verification_normalization_answer(x.username, i), axis=1)
-    verification_df = df2[df2['sku_verification_count'] == 1].groupby('rid')['sku_verification_count'].count()
-    verification_df = df1.join(verification_df)
+    df['shelf_display_verification_2'] = 1 - pd.isna(df.person_verification_3) - (df.person_verification_3 == '')
+    df3['sku_verification_count'] = df3.apply(lambda x: sku_verification_normalization_answer(x.username, i), axis=1)
+    verification_df = df3[df3['sku_verification_count'] == 1].groupby('rid')['sku_verification_count'].count()
+    verification_df = df.join(verification_df)
     verification_df['sku_verification_count'].fillna(0, inplace=True)
     return verification_df
-
-
-sql_get_multi_option_answer = """SELECT tr.id rid, ta.answer, CONCAT('%s',tqo.option_value) option_name, 
-tqo.option_index FROM t_response tr 
-LEFT JOIN lenzbi.t_pg_report_hsm_qnair tprhq ON tr.taskid_owner = tprhq.taskid 
-LEFT JOIN t_answer ta ON tr.id = ta.response_id AND tprhq.qid = ta.qid 
-LEFT JOIN t_question_option tqo ON tprhq.qid = tqo.question_id
-WHERE tr.taskid_owner IN (%s) 
-%s
-AND tr.`status` NOT IN (%s) 
-AND tprhq.criteria IN ('multi_option') 
-AND tprhq.category = '%s'
-GROUP BY tr.id,tqo.option_index"""
 
 
 def multi_option_normalization_answer(answer, option_index):
@@ -519,14 +524,12 @@ def multi_option_normalization_answer(answer, option_index):
         return 1 if option_index in answer.split(',') else 0
 
 
-def generate_multi_option_df(task, time, status_not, i):
+def generate_multi_option_df(df1, df2, df3, i):
     if i == 0 or i == 1 or i == 2 or i == 5:
-        if i == 5:
-            df = query_data_frame(mysql_db_ppzck_task,
-                                  sql_get_multi_option_answer % ('样品展示_', task, time, status_not, category[i]))
-        else:
-            df = query_data_frame(mysql_db_ppzck_task,
-                                  sql_get_multi_option_answer % ('联合陈列_', task, time, status_not, category[i]))
+        df = pd.merge(df1, qnair_info_df[(qnair_info_df['criteria'] == 'multi_option') & (
+                qnair_info_df['category'] == category[i])], how='left', on='taskid', sort=False, copy=False)
+        df = pd.merge(df, df2, how='left', on=['rid', 'qid'], sort=False, copy=False)
+        df = pd.merge(df, df3, how='left', on='qid', sort=False, copy=False)
         df['answer_new'] = df.apply(lambda x: multi_option_normalization_answer(x.answer, x.option_index), axis=1)
         multi_option_df = df.reindex(columns=['rid', 'option_name', 'answer_new'])
         multi_option_df = multi_option_df.set_index(['rid', 'option_name']).unstack()
@@ -542,35 +545,28 @@ def generate_multi_option_df(task, time, status_not, i):
         return DataFrame()
 
 
-sql_get_single_option_answer = """SELECT tr.id rid, CASE WHEN ta.answer = '0' THEN '是' ELSE '否' END answer_option, 
-tprhq.title FROM t_response tr 
-LEFT JOIN lenzbi.t_pg_report_hsm_qnair tprhq ON tr.taskid_owner = tprhq.taskid 
-LEFT JOIN t_answer ta ON tr.id = ta.response_id AND tprhq.qid = ta.qid 
-WHERE tr.taskid_owner IN (%s) 
-%s 
-AND tr.`status` NOT IN (%s) 
-AND tprhq.criteria IN ('single_option') 
-AND tprhq.category = '%s'
-GROUP BY tr.id,tprhq.qindex"""
-
-
-def generate_single_option_df(task, time, status_not, i):
+def generate_single_option_df(df1, df2, i):
     if i == 7:
-        df = query_data_frame(mysql_db_ppzck_task, sql_get_single_option_answer % (task, time, status_not, category[i]))
-        single_option_df = df.set_index(['rid', 'title']).unstack()
+        df = pd.merge(df1, qnair_info_df[(qnair_info_df['criteria'] == 'single_option') & (
+                qnair_info_df['category'] == category[i])], how='left', on='taskid', sort=False, copy=False)
+        df = pd.merge(df, df2, how='left', on=['rid', 'qid'], sort=False, copy=False)
+        df['answer_new'] = df.apply(
+            lambda x: '否' if pd.isna(x.answer) or x.answer == '' or int(x.answer) != 0 else '是', axis=1)
+        single_option_df = df.reindex(columns=['rid', 'title', 'answer_new'])
+        single_option_df = single_option_df.set_index(['rid', 'title']).unstack()
         single_option_df.columns = single_option_df.columns.droplevel(0)
         return single_option_df
     else:
         return DataFrame()
 
 
-def to_one_wave_result(task, time, status_not, year, i):
-    number_df, check_number_df = generate_number_df(task, time, status_not, i)
-    image_df = generate_image_df(task, time, status_not, year, i)
-    sku_df = generate_sku_df(task, time, status_not, i)
-    verification_df = generate_verification_df(task, time, status_not, i)
-    multi_option_df = generate_multi_option_df(task, time, status_not, i)
-    single_option_df = generate_single_option_df(task, time, status_not, i)
+def to_one_wave_result(rd, sd, ad, svd, mod, year, i):
+    number_df, check_number_df = generate_number_df(rd, ad, i)
+    image_df = generate_image_df(rd, ad, year, i)
+    sku_df = generate_sku_df(rd, sd, i)
+    verification_df = generate_verification_df(rd, ad, svd, i)
+    multi_option_df = generate_multi_option_df(rd, ad, mod, i)
+    single_option_df = generate_single_option_df(rd, ad, i)
     result_df = number_df.join(image_df)
     result_df = result_df.join(sku_df)
     result_df = result_df.join(verification_df)
@@ -659,11 +655,43 @@ def check_all(cr, sdv1, sdv2, svc, cts, cps, cpd, cpsku):
 
 def to_two_wave_result(i):
     logger.info('Run PID (%s)...' % os.getpid())
-    new_df, check_number_new_df = to_one_wave_result(task_new[i], time_selection_new, status_not_in_new, year_new[i], i)
-    old_df, check_number_old_df = to_one_wave_result(task_old[i], time_selection_old, status_not_in_old, year_old[i], i)
+    sku_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_sku % (
+        task_new[i], time_selection_new, status_not_in_new))
+    answer_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_answer % (
+        task_new[i], time_selection_new, status_not_in_new))
+    sku_verification_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_sku_verification % (
+        task_new[i], time_selection_new, status_not_in_new))
+    sku_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_sku % (
+        task_old[i], time_selection_old, status_not_in_old))
+    answer_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_answer % (
+        task_old[i], time_selection_old, status_not_in_old))
+    sku_verification_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_sku_verification % (
+        task_old[i], time_selection_old, status_not_in_old))
+    sku_df_new.drop_duplicates(subset=['rid', 'product_id'], inplace=True)
+    answer_df_new.drop_duplicates(subset=['rid', 'qid'], inplace=True)
+    sku_df_old.drop_duplicates(subset=['rid', 'product_id'], inplace=True)
+    answer_df_old.drop_duplicates(subset=['rid', 'qid'], inplace=True)
+    if i == 0 or i == 1 or i == 2:
+        multi_option_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_new[i]))
+        multi_option_df_new.drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+        multi_option_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_old[i]))
+        multi_option_df_old.drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+    elif i == 5:
+        multi_option_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('样品展示_', task_new[i]))
+        multi_option_df_new.drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+        multi_option_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('样品展示_', task_old[i]))
+        multi_option_df_old.drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+    else:
+        multi_option_df_new = DataFrame()
+        multi_option_df_old = DataFrame()
+    new_df, check_number_new_df = to_one_wave_result(
+        rid_df_list_new[i], sku_df_new, answer_df_new, sku_verification_df_new, multi_option_df_new, year_new[i], i)
+    old_df, check_number_old_df = to_one_wave_result(
+        rid_df_list_old[i], sku_df_old, answer_df_old, sku_verification_df_old, multi_option_df_old, year_old[i], i)
     new_df = pd.merge(new_df, store_new_df, how='left', on='addressIDnum')
     old_df = pd.merge(old_df, store_old_df, how='left', on='addressIDnum')
     new_df = pd.merge(new_df, old_df, how='left', on='addressIDnum', suffixes=('', '_old'))
+    new_df.drop_duplicates(subset='rid', inplace=True)
     new_df['check_total_shelf'] = new_df.apply(
         lambda x: check_vs_pp_total_shelf(x.total_shelf, x.total_shelf_old), axis=1)
     new_df['check_pg_shelf'] = new_df.apply(
@@ -676,10 +704,12 @@ def to_two_wave_result(i):
         lambda x: check_all(x.check_recent, x.shelf_display_verification_1, x.shelf_display_verification_2,
                             x.sku_verification_count, x.check_total_shelf, x.check_pg_shelf,
                             x.check_pg_display, x.check_pg_sku), axis=1)
+    report_new_df = new_df.reindex(columns=report_order[i])
+    report_old_df = old_df.reindex(columns=report_order[i])
     checkpoint_new_df = new_df.reindex(columns=checkpoint_order[i])
     checkpoint_old_df = old_df.reindex(columns=checkpoint_order[i])
-    new_df.to_excel(new_file[i], category[i], columns=report_order[i], index=False)
-    old_df.to_excel(old_file[i], category[i], columns=report_order[i], index=False)
+    report_new_df.to_excel(new_file[i], category[i], columns=report_order[i], index=False)
+    report_old_df.to_excel(old_file[i], category[i], columns=report_order[i], index=False)
     writer_checkpoint = pd.ExcelWriter(checkpoint_file[i])
     checkpoint_new_df.to_excel(writer_checkpoint, category[i] + '_new', index=False)
     checkpoint_old_df.to_excel(writer_checkpoint, category[i] + '_old', index=False)
@@ -694,9 +724,11 @@ def to_two_wave_result(i):
     os.remove(new_file[i])
     os.remove(old_file[i])
     os.remove(checkpoint_file[i])
-    with MySQLInstance(**mysql_db_bi_task, dict_result=True) as db:
-        db.executemany(sql_insert_report_new, [tuple(x) for x in new_df.reindex(columns=insert_table_order_new).values])
-        db.executemany(sql_insert_report_old, [tuple(x) for x in old_df.reindex(columns=insert_table_order_old).values])
+    # with MySQLInstance(**mysql_db_bi_task, dict_result=True) as db:
+    #     db.executemany(sql_insert_report_new,
+    #                    [tuple(x) for x in new_df.reindex(columns=insert_table_order_new).values])
+    #     db.executemany(sql_insert_report_old,
+    #                    [tuple(x) for x in old_df.reindex(columns=insert_table_order_old).values])
 
 
 if __name__ == '__main__':

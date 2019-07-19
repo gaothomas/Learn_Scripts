@@ -13,7 +13,7 @@ from MySQLManager import MySQLInstance
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
-log_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log_pg_cs.log')
+log_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log_pg_cs_1906.log')
 f_handler = logging.FileHandler(log_file)
 f_handler.setLevel(logging.INFO)
 formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
@@ -24,7 +24,7 @@ s_handler.setLevel(logging.DEBUG)
 logger.addHandler(s_handler)
 
 conf = configparser.ConfigParser()
-conf_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config_pg_cs.ini')
+conf_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config_pg_cs_1906.ini')
 conf.read(conf_file, encoding='utf-8')
 
 mysql_db_ppzck_task = {

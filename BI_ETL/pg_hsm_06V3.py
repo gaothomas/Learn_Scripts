@@ -18,7 +18,7 @@ start_time = datetime.now()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
-log_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log_pg_hsm.log')
+log_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log_pg_hsm_1906.log')
 f_handler = logging.FileHandler(log_file)
 f_handler.setLevel(logging.INFO)
 formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
@@ -29,7 +29,7 @@ s_handler.setLevel(logging.DEBUG)
 logger.addHandler(s_handler)
 
 conf = configparser.ConfigParser()
-conf_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config_pg_hsm.ini')
+conf_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config_pg_hsm_1906.ini')
 conf.read(conf_file, encoding='utf-8')
 
 mysql_db_ppzck_task = {
@@ -74,11 +74,7 @@ report_order = []
 checkpoint_order = []
 new_file = []
 old_file = []
-new_checkpoint_file = []
-old_checkpoint_file = []
-new_checkpoint_number_file = []
-old_checkpoint_number_file = []
-
+checkpoint_file = []
 
 for each_category in category:
     task_new.append(conf.get('pg_hsm_' + each_category, 'task_new'))
@@ -89,22 +85,13 @@ for each_category in category:
     checkpoint_order.append(conf.get('pg_hsm_' + each_category, 'checkpoint_order').split())
     new_file.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                  ('pg_hsm_report_new_' + each_category +
-                                  datetime.now().strftime('%Y-%m-%d') + '.csv')))
+                                  datetime.now().strftime('%Y-%m-%d') + '.xlsx')))
     old_file.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                  ('pg_hsm_report_old_' + each_category +
-                                  datetime.now().strftime('%Y-%m-%d') + '.csv')))
-    new_checkpoint_file.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            ('pg_hsm_report_new_checkpoint_' + each_category +
-                                             datetime.now().strftime('%Y-%m-%d') + '.csv')))
-    old_checkpoint_file.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            ('pg_hsm_report_old_checkpoint_' + each_category +
-                                             datetime.now().strftime('%Y-%m-%d') + '.csv')))
-    new_checkpoint_number_file.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                   ('pg_hsm_report_new_checkpoint_number_' + each_category +
-                                                    datetime.now().strftime('%Y-%m-%d') + '.csv')))
-    old_checkpoint_number_file.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                   ('pg_hsm_report_old_checkpoint_number_' + each_category +
-                                                    datetime.now().strftime('%Y-%m-%d') + '.csv')))
+                                  datetime.now().strftime('%Y-%m-%d') + '.xlsx')))
+    checkpoint_file.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        ('pg_hsm_report_checkpoint_' + each_category +
+                                         datetime.now().strftime('%Y-%m-%d') + '.xlsx')))
 
 sql_delete_report = """DELETE FROM t_pg_report_hsm WHERE taskid IN (%s)"""
 sql_delete_sku = """DELETE FROM t_pg_report_hsm_sku_details WHERE taskid IN (%s)"""
@@ -152,12 +139,15 @@ FROM t_response_examine tre LEFT JOIN t_response tr ON tr.Id = tre.id
 WHERE tr.taskid_owner IN (%s) 
 %s 
 AND tr.`status` NOT IN (%s) """
-sql_get_multi_option = """SELECT tq.id qid, CONCAT('%s',tqo.option_value) option_name, tqo.option_index 
-FROM t_question_option tqo LEFT JOIN t_question tq ON tqo.question_id = tq.Id
-WHERE tq.taskid IN (%s)"""
 
 rid_df_list_new = []
 rid_df_list_old = []
+sku_df_list_new = []
+sku_df_list_old = []
+answer_df_list_new = []
+answer_df_list_old = []
+sku_verification_df_list_new = []
+sku_verification_df_list_old = []
 
 store_info_df = query_data_frame(mysql_db_ppzck_task, sql_get_store_info)
 store_new_df = store_info_df.copy()
@@ -173,15 +163,37 @@ for index2 in range(8):
     else:
         rid_df_list_new.append(query_data_frame(mysql_db_ppzck_task, sql_get_rid % (
             task_new[index2], time_selection_new, status_not_in_new)))
+        sku_df_list_new.append(query_data_frame(mysql_db_ppzck_task, sql_get_sku % (
+            task_new[index2], time_selection_new, status_not_in_new)))
+        answer_df_list_new.append(query_data_frame(mysql_db_ppzck_task, sql_get_answer % (
+            task_new[index2], time_selection_new, status_not_in_new)))
+        sku_verification_df_list_new.append(query_data_frame(mysql_db_ppzck_task, sql_get_sku_verification % (
+            task_new[index2], time_selection_new, status_not_in_new)))
         rid_df_list_old.append(query_data_frame(mysql_db_ppzck_task, sql_get_rid % (
+            task_old[index2], time_selection_old, status_not_in_old)))
+        sku_df_list_old.append(query_data_frame(mysql_db_ppzck_task, sql_get_sku % (
+            task_old[index2], time_selection_old, status_not_in_old)))
+        answer_df_list_old.append(query_data_frame(mysql_db_ppzck_task, sql_get_answer % (
+            task_old[index2], time_selection_old, status_not_in_old)))
+        sku_verification_df_list_old.append(query_data_frame(mysql_db_ppzck_task, sql_get_sku_verification % (
             task_old[index2], time_selection_old, status_not_in_old)))
         if index2 == 4 or index2 == 6:
             rid_df_list_new.append(rid_df_list_new[index2])
+            sku_df_list_new.append(sku_df_list_new[index2])
+            answer_df_list_new.append(answer_df_list_new[index2])
+            sku_verification_df_list_new.append(sku_verification_df_list_new[index2])
             rid_df_list_old.append(rid_df_list_old[index2])
+            sku_df_list_old.append(sku_df_list_old[index2])
+            answer_df_list_old.append(answer_df_list_old[index2])
+            sku_verification_df_list_old.append(sku_verification_df_list_old[index2])
 
 for index3 in range(8):
     rid_df_list_new[index3].drop_duplicates(subset='rid', inplace=True)
+    sku_df_list_new[index3].drop_duplicates(subset=['rid', 'product_id'], inplace=True)
+    answer_df_list_new[index3].drop_duplicates(subset=['rid', 'qid'], inplace=True)
     rid_df_list_old[index3].drop_duplicates(subset='rid', inplace=True)
+    sku_df_list_old[index3].drop_duplicates(subset=['rid', 'product_id'], inplace=True)
+    answer_df_list_old[index3].drop_duplicates(subset=['rid', 'qid'], inplace=True)
     store_new_df = pd.merge(store_new_df, rid_df_list_new[index3].reindex(columns=['addressIDnum', 'rid']),
                             how='left', on='addressIDnum', sort=False, copy=False)
     store_old_df = pd.merge(store_old_df, rid_df_list_old[index3].reindex(columns=['addressIDnum', 'rid']),
@@ -194,6 +206,29 @@ store_old_df.drop_duplicates(subset='addressIDnum', inplace=True)
 store_old_df.iloc[:, 15:] = store_old_df.iloc[:, 15:].apply(pd.notna)
 store_old_df['category_num'] = store_old_df.iloc[:, 15:].apply(np.sum, axis=1)
 store_old_df.drop(columns=store_old_df.columns[15:23], inplace=True)
+
+sql_get_multi_option = """SELECT tq.id qid, CONCAT('%s',tqo.option_value) option_name, tqo.option_index 
+FROM t_question_option tqo LEFT JOIN t_question tq ON tqo.question_id = tq.Id
+WHERE tq.taskid IN (%s)"""
+
+multi_option_df_list_new = [None, None, None, None, None, None, None, None]
+multi_option_df_list_old = [None, None, None, None, None, None, None, None]
+multi_option_df_list_new[0] = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_new[0]))
+multi_option_df_list_new[0].drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+multi_option_df_list_new[1] = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_new[1]))
+multi_option_df_list_new[1].drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+multi_option_df_list_new[2] = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_new[2]))
+multi_option_df_list_new[2].drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+multi_option_df_list_new[5] = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('样品展示_', task_new[5]))
+multi_option_df_list_new[5].drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+multi_option_df_list_old[0] = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_old[0]))
+multi_option_df_list_old[0].drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+multi_option_df_list_old[1] = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_old[1]))
+multi_option_df_list_old[1].drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+multi_option_df_list_old[2] = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_old[2]))
+multi_option_df_list_old[2].drop_duplicates(subset=['qid', 'option_index'], inplace=True)
+multi_option_df_list_old[5] = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('样品展示_', task_old[5]))
+multi_option_df_list_old[5].drop_duplicates(subset=['qid', 'option_index'], inplace=True)
 
 
 def is_non_negative_number(num):
@@ -651,39 +686,12 @@ def check_all(cr, sdv1, sdv2, svc, cts, cps, cpd, cpsku):
 
 def to_two_wave_result(i):
     logger.info('Run PID (%s)...' % os.getpid())
-    sku_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_sku % (
-        task_new[i], time_selection_new, status_not_in_new))
-    answer_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_answer % (
-        task_new[i], time_selection_new, status_not_in_new))
-    sku_verification_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_sku_verification % (
-        task_new[i], time_selection_new, status_not_in_new))
-    sku_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_sku % (
-        task_old[i], time_selection_old, status_not_in_old))
-    answer_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_answer % (
-        task_old[i], time_selection_old, status_not_in_old))
-    sku_verification_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_sku_verification % (
-        task_old[i], time_selection_old, status_not_in_old))
-    sku_df_new.drop_duplicates(subset=['rid', 'product_id'], inplace=True)
-    answer_df_new.drop_duplicates(subset=['rid', 'qid'], inplace=True)
-    sku_df_old.drop_duplicates(subset=['rid', 'product_id'], inplace=True)
-    answer_df_old.drop_duplicates(subset=['rid', 'qid'], inplace=True)
-    if i == 0 or i == 1 or i == 2:
-        multi_option_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_new[i]))
-        multi_option_df_new.drop_duplicates(subset=['qid', 'option_index'], inplace=True)
-        multi_option_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('联合陈列_', task_old[i]))
-        multi_option_df_old.drop_duplicates(subset=['qid', 'option_index'], inplace=True)
-    elif i == 5:
-        multi_option_df_new = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('样品展示_', task_new[i]))
-        multi_option_df_new.drop_duplicates(subset=['qid', 'option_index'], inplace=True)
-        multi_option_df_old = query_data_frame(mysql_db_ppzck_task, sql_get_multi_option % ('样品展示_', task_old[i]))
-        multi_option_df_old.drop_duplicates(subset=['qid', 'option_index'], inplace=True)
-    else:
-        multi_option_df_new = DataFrame()
-        multi_option_df_old = DataFrame()
     new_df, check_number_new_df = to_one_wave_result(
-        rid_df_list_new[i], sku_df_new, answer_df_new, sku_verification_df_new, multi_option_df_new, year_new[i], i)
+        rid_df_list_new[i], sku_df_list_new[i], answer_df_list_new[i], sku_verification_df_list_new[i],
+        multi_option_df_list_new[i], year_new[i], i)
     old_df, check_number_old_df = to_one_wave_result(
-        rid_df_list_old[i], sku_df_old, answer_df_old, sku_verification_df_old, multi_option_df_old, year_old[i], i)
+        rid_df_list_old[i], sku_df_list_old[i], answer_df_list_old[i], sku_verification_df_list_old[i],
+        multi_option_df_list_old[i], year_old[i], i)
     new_df = pd.merge(new_df, store_new_df, how='left', on='addressIDnum')
     old_df = pd.merge(old_df, store_old_df, how='left', on='addressIDnum')
     new_df = pd.merge(new_df, old_df, how='left', on='addressIDnum', suffixes=('', '_old'))
@@ -704,24 +712,22 @@ def to_two_wave_result(i):
     report_old_df = old_df.reindex(columns=report_order[i])
     checkpoint_new_df = new_df.reindex(columns=checkpoint_order[i])
     checkpoint_old_df = old_df.reindex(columns=checkpoint_order[i])
-    report_new_df.to_csv(new_file[i], index=False, encoding='utf_8_sig')
-    report_old_df.to_csv(old_file[i], index=False, encoding='utf_8_sig')
-    checkpoint_new_df.to_csv(new_checkpoint_file[i], index=False, encoding='utf_8_sig')
-    checkpoint_old_df.to_csv(old_checkpoint_file[i], index=False, encoding='utf_8_sig')
-    check_number_new_df.to_csv(new_checkpoint_number_file[i], index=False, encoding='utf_8_sig')
-    check_number_old_df.to_csv(old_checkpoint_number_file[i], index=False, encoding='utf_8_sig')
+    report_new_df.to_excel(new_file[i], category[i], columns=report_order[i], index=False)
+    report_old_df.to_excel(old_file[i], category[i], columns=report_order[i], index=False)
+    writer_checkpoint = pd.ExcelWriter(checkpoint_file[i])
+    checkpoint_new_df.to_excel(writer_checkpoint, category[i] + '_new', index=False)
+    checkpoint_old_df.to_excel(writer_checkpoint, category[i] + '_old', index=False)
+    check_number_new_df.to_excel(writer_checkpoint, category[i] + '_number_new', index=False)
+    check_number_old_df.to_excel(writer_checkpoint, category[i] + '_number_old', index=False)
+    writer_checkpoint.close()
     subject = category[i] + datetime.now().strftime('%Y-%m-%d')
     contents = ['附件中为前后两月数据及需检查的数据', ]
-    attachments = [new_file[i], old_file[i], new_checkpoint_file[i], old_checkpoint_file[i],
-                   new_checkpoint_number_file[i], old_checkpoint_number_file[i]]
+    attachments = [new_file[i], old_file[i], checkpoint_file[i]]
     with EmailSender(**email) as email_sender:
         email_sender.send_email(to=to, subject=subject, contents=contents, attachments=attachments)
     os.remove(new_file[i])
     os.remove(old_file[i])
-    os.remove(new_checkpoint_file[i])
-    os.remove(old_checkpoint_file[i])
-    os.remove(new_checkpoint_number_file[i])
-    os.remove(old_checkpoint_number_file[i])
+    os.remove(checkpoint_file[i])
     with MySQLInstance(**mysql_db_bi_task, dict_result=True) as db:
         db.executemany(sql_insert_report_new, [tuple(x) for x in new_df.reindex(columns=insert_table_order_new).values])
         db.executemany(sql_insert_report_old, [tuple(x) for x in old_df.reindex(columns=insert_table_order_old).values])
