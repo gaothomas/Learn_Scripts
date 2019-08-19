@@ -21,3 +21,7 @@ https://blog.csdn.net/shw800/article/details/78678665
 Python之pymysql的使用
 https://www.cnblogs.com/liubinsh/p/7568423.html
 https://blog.csdn.net/tcy23456/article/details/86665211
+https://www.runoob.com/python/att-string-find.html
+https://www.cnblogs.com/mayite/articles/9131490.html
+https://www.cnblogs.com/alpqmz/p/9447066.html
+https://www.runoob.com/python3/python3-func-zip.html
