@@ -5,9 +5,11 @@ https://blog.csdn.net/qq_28869927/article/details/83316023
 list 切片只有一种，按下标切片，左闭右开区间，深拷贝。
 ndarray 切片只有一种，按下标切片，左闭右开区间，浅拷贝，应用copy方法生成深拷贝。
 dataframe 切片两种，按下标切片，左闭右开区间，按索引切片，闭区间，浅拷贝，应用copy方法生成深拷贝。
-布尔索引/花式索引
+布尔索引/花式索引（loc/iloc由花式索引而来）
 ndarray 赋值给变量（无论是否应用copy方法），深拷贝；不赋值给变量，浅拷贝。
 dataframe 赋值给变量（无论是否应用copy方法），深拷贝；不赋值给变量，浅拷贝。
 SettingWithCopyWarning 该用copy时，一定要用copy。
 https://www.jianshu.com/p/72274ccb647a
 https://blog.csdn.net/weixin_41116447/article/details/81081540
+连续空间shallow copy单一索引/切片/转置
+不连续空间deep copy布尔索引/花式索引/loc/iloc等
