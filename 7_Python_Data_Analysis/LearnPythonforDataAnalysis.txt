@@ -13,3 +13,8 @@ https://www.jianshu.com/p/72274ccb647a
 https://blog.csdn.net/weixin_41116447/article/details/81081540
 连续空间shallow copy单一索引/切片/转置
 不连续空间deep copy布尔索引/花式索引/loc/iloc等
+https://blog.csdn.net/jingyi130705008/article/details/78162905
+https://www.cnblogs.com/oceanicstar/p/10900332.html
+https://blog.csdn.net/tcy23456/article/details/85834380
+https://www.cnblogs.com/oceanicstar/p/10869725.html
+https://blog.csdn.net/qq_28811329/article/details/79962511
