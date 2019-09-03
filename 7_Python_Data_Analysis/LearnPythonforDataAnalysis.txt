@@ -18,3 +18,7 @@ https://www.cnblogs.com/oceanicstar/p/10900332.html
 https://blog.csdn.net/tcy23456/article/details/85834380
 https://www.cnblogs.com/oceanicstar/p/10869725.html
 https://blog.csdn.net/qq_28811329/article/details/79962511
+https://www.jianshu.com/p/38a66299d105
+https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.pivot.html
+https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.melt.html
+https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.melt.html

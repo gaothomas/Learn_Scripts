@@ -10,3 +10,8 @@ http://www.bihell.com/2015/06/16/filter-views-using-url-parameters-ef-bb-bf/
 https://blog.csdn.net/tb644937/article/details/50981835
 https://kb.tableau.com/articles/issue/download-data-and-crosstab-unavailable?lang=zh-cn
 https://www.bilibili.com/read/cv1503656
+https://blog.databender.net/2015/01/22/understanding-level-of-detail-expressions-part-1/
+LOD（level of detail） 数据提取筛选器-数据源筛选器-上下文筛选器-FIXED-维度筛选器-INCLUDE/EXCLUDE-度量筛选器-表计算筛选器
+FIXED 按指定详细级别聚合，与视图数据关联，视图数据维度高于指定详细级别则聚合，低或不相关则复制。
+INCLUDE 按视图维度聚合，指定详细级别维度低则聚合，高则按视图维度发生作用。
+EXCLUDE 按视图维度聚合，指定详细级别维度高则排除并复制，低则按视图维度发生作用。
