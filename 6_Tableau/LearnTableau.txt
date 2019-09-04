@@ -15,3 +15,5 @@ LOD（level of detail） 数据提取筛选器-数据源筛选器-上下文筛选器-FIXED-维度筛选器
 FIXED 按指定详细级别聚合，与视图数据关联，视图数据维度高于指定详细级别则聚合，低或不相关则复制。
 INCLUDE 按视图维度聚合，指定详细级别维度低则聚合，高则按视图维度发生作用。
 EXCLUDE 按视图维度聚合，指定详细级别维度高则排除并复制，低则按视图维度发生作用。
+https://www.jianshu.com/c/c0f11d757387
+https://www.jianshu.com/p/3d44f72655bf
