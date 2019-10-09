@@ -27,3 +27,5 @@ https://www.cnblogs.com/alpqmz/p/9447066.html
 https://www.runoob.com/python3/python3-func-zip.html
 json序列化dumps dict->str;反序列化loads str->dict dump/load含json文件参数
 https://www.jianshu.com/p/da4fc5d4f9d8
+https://www.jianshu.com/p/0576ee98fb33
+https://blog.csdn.net/qq_33472146/article/details/90606359

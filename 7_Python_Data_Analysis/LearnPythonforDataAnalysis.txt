@@ -24,4 +24,8 @@ https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.melt.html
 https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.melt.html
 https://www.jianshu.com/p/42f1d2909bb6
 https://www.jb51.net/article/165964.htm
-
+https://www.jianshu.com/p/ca23909f6fbc
+https://baijiahao.baidu.com/s?id=1622798772654712959&wfr=spider&for=pc
+https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.combine_first.html
+https://blog.csdn.net/tymatlab/article/details/79009618
+https://www.jianshu.com/p/69d9d7e37bc5
